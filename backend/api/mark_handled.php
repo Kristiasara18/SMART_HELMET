@@ -11,7 +11,7 @@ if (!$id) {
   exit;
 }
 
-$stmt = $conn->prepare("UPDATE kejadian_helmet SET handled = 1 WHERE id = ?");
+$stmt = $conn->prepare("UPDATE kejadian_detail SET handled = 1 WHERE id = ?");
 $stmt->bind_param("i",$id);
 $ok = $stmt->execute();
 
@@ -21,3 +21,4 @@ if ($ok) {
   echo json_encode(["status"=>"error","message"=>"DB error"]);
 }
 $conn->close();
+?>

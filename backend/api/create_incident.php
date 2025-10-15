@@ -1,26 +1,49 @@
 <?php
 header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json; charset=UTF-8");
-include "../koneksi.php";
 
-$data = json_decode(file_get_contents("php://input"), true);
+include '../koneksi.php';
 
-// contoh fallback jika tidak ada body
-$nama = $data['nama_pekerja'] ?? 'Test Operator';
-$device_id = $data['device_id'] ?? 'HLM-999';
-$lokasi = $data['lokasi'] ?? 'Blok X';
-$status = $data['status'] ?? 'Jatuh';
-$catatan = $data['catatan'] ?? 'Simulasi insiden';
-
-// insert record
-$stmt = $conn->prepare("INSERT INTO kejadian_helmet (device_id, nama_pekerja, lokasi, status, catatan, handled) VALUES (?, ?, ?, ?, ?, 0)");
-$stmt->bind_param("sssss", $device_id, $nama, $lokasi, $status, $catatan);
-$ok = $stmt->execute();
-
-if ($ok) {
-  echo json_encode(["status"=>"success","message"=>"Created incident","id"=>$conn->insert_id]);
-} else {
-  echo json_encode(["status"=>"error","message"=>"DB insert failed"]);
+// Preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
 }
 
+// Pastikan POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(["status" => "error", "message" => "Metode harus POST"]);
+    exit();
+}
+
+// Ambil body JSON
+$data = json_decode(file_get_contents("php://input"), true);
+
+if (!$data) {
+    echo json_encode(["status" => "error", "message" => "Data tidak valid"]);
+    exit();
+}
+
+// Sesuaikan kolom tabel kejadian_detail
+$device_id = $data['device_id'] ?? 'HLM-001';
+$nama_pekerja = $data['nama_pekerja'] ?? 'Bintang Dorkas';
+$lokasi = $data['lokasi'] ?? 'Zona A';
+$status = $data['status'] ?? 'Jatuh';
+$catatan = $data['catatan'] ?? '';
+$handled = 0;
+
+// Insert ke kejadian_detail
+$stmt = $conn->prepare("INSERT INTO kejadian_detail (device_id, nama_pekerja, lokasi, status, catatan, handled) VALUES (?, ?, ?, ?, ?, ?)");
+$stmt->bind_param("sssssi", $device_id, $nama_pekerja, $lokasi, $status, $catatan, $handled);
+
+if ($stmt->execute()) {
+    echo json_encode(["status" => "success", "message" => "Insiden berhasil disimpan"]);
+} else {
+    echo json_encode(["status" => "error", "message" => "Gagal menyimpan: ".$stmt->error]);
+}
+
+$stmt->close();
 $conn->close();
+?>
