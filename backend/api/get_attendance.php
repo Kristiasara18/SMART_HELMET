@@ -1,24 +1,36 @@
 <?php
 require('../koneksi.php');
 
-// Ambil tanggal hari ini dalam format YYYY-MM-DD
+header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json; charset=UTF-8");
+
 $tanggal_hari_ini = date('Y-m-d');
 
-// Query untuk menghitung total pekerja dan jumlah yang hadir hari ini
+// Hitung jumlah pekerja yang hadir hari ini
 $query = "
     SELECT 
-        COUNT(DISTINCT id_pekerja) AS total_pekerja,
-        SUM(CASE WHEN kehadiran = 'Hadir' THEN 1 ELSE 0 END) AS hadir
+        COUNT(*) AS hadir
     FROM absensi
-    WHERE tanggal = '$tanggal_hari_ini'
+    WHERE tanggal = '$tanggal_hari_ini' 
+      AND kehadiran = 'Hadir'
 ";
 
 $result = $conn->query($query);
 
 if ($result && $result->num_rows > 0) {
     $data = $result->fetch_assoc();
-    echo json_encode(["status" => "success", "data" => $data]);
+    echo json_encode([
+        "status" => "success",
+        "data" => [
+            "hadir" => (int)$data['hadir']
+        ]
+    ]);
 } else {
-    echo json_encode(["status" => "error", "message" => "No data found for today"]);
+    echo json_encode([
+        "status" => "error",
+        "message" => "No attendance data found for today"
+    ]);
 }
+
+$conn->close();
 ?>
